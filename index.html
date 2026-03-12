@@ -22,13 +22,82 @@
 
   <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.1.9/umd/Recharts.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
 const { useState, useEffect } = React;
-const { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } = Recharts;
+
+// Simple SVG line chart (replaces Recharts LineChart)
+function SvgLineChart({ data, width = 380, height = 120 }) {
+  if (!data || data.length < 2) return null;
+  const vals = data.map(d => d.Slag);
+  const minV = Math.min(...vals) - 1;
+  const maxV = Math.max(...vals) + 1;
+  const pad = { top: 10, right: 10, bottom: 24, left: 28 };
+  const W = width - pad.left - pad.right;
+  const H = height - pad.top - pad.bottom;
+  const x = i => pad.left + (i / (data.length - 1)) * W;
+  const y = v => pad.top + H - ((v - minV) / (maxV - minV)) * H;
+  const points = data.map((d, i) => `${x(i)},${y(d.Slag)}`).join(" ");
+  return (
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:"visible"}}>
+      {/* Y axis labels */}
+      {[minV+1, Math.round((minV+maxV)/2), maxV-1].map(v => (
+        <text key={v} x={pad.left-4} y={y(v)+4} textAnchor="end" fontSize={9} fill="rgba(168,213,162,0.35)">{v}</text>
+      ))}
+      {/* X axis labels */}
+      {data.map((d,i) => (
+        <text key={i} x={x(i)} y={height-6} textAnchor="middle" fontSize={9} fill="rgba(168,213,162,0.35)">{d.name}</text>
+      ))}
+      {/* Grid lines */}
+      {[minV+1, Math.round((minV+maxV)/2), maxV-1].map(v => (
+        <line key={v} x1={pad.left} x2={pad.left+W} y1={y(v)} y2={y(v)} stroke="rgba(168,213,162,0.07)" strokeDasharray="3 3"/>
+      ))}
+      {/* Line */}
+      <polyline points={points} fill="none" stroke="#ffffff" strokeWidth={2}/>
+      {/* Dots */}
+      {data.map((d,i) => (
+        <circle key={i} cx={x(i)} cy={y(d.Slag)} r={3} fill="#ffffff"/>
+      ))}
+    </svg>
+  );
+}
+
+// Simple SVG bar chart (replaces Recharts BarChart)
+function SvgBarChart({ data, width = 380, height = 140 }) {
+  if (!data || data.length < 2) return null;
+  const vals = data.map(d => d.Slag);
+  const minV = Math.min(...vals) - 1;
+  const maxV = Math.max(...vals) + 1;
+  const pad = { top: 10, right: 10, bottom: 24, left: 28 };
+  const W = width - pad.left - pad.right;
+  const H = height - pad.top - pad.bottom;
+  const barW = Math.min(16, (W / data.length) * 0.6);
+  const x = i => pad.left + (i + 0.5) * (W / data.length);
+  const yTop = v => pad.top + H - ((v - minV) / (maxV - minV)) * H;
+  const yBase = yTop(minV);
+  return (
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:"visible"}}>
+      {[minV+1, Math.round((minV+maxV)/2), maxV-1].map(v => (
+        <text key={v} x={pad.left-4} y={yTop(v)+4} textAnchor="end" fontSize={9} fill="rgba(168,213,162,0.35)">{v}</text>
+      ))}
+      {[minV+1, Math.round((minV+maxV)/2), maxV-1].map(v => (
+        <line key={v} x1={pad.left} x2={pad.left+W} y1={yTop(v)} y2={yTop(v)} stroke="rgba(168,213,162,0.07)" strokeDasharray="3 3"/>
+      ))}
+      {data.map((d,i) => {
+        const bx = x(i) - barW/2;
+        const by = yTop(d.Slag);
+        const bh = yBase - by;
+        return (
+          <g key={i}>
+            <rect x={bx} y={by} width={barW} height={bh} fill="#4a9e4a" rx={3}/>
+            <text x={x(i)} y={height-6} textAnchor="middle" fontSize={9} fill="rgba(168,213,162,0.35)">{d.name}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 const COURSES = {
   park: {
@@ -610,14 +679,7 @@ window.GolfApp = function App() {
           {last10.length>=2 && (
             <div style={{...C.card,padding:"12px 6px 6px",marginBottom:14}}>
               <div style={{fontSize:10,color:"rgba(168,213,162,0.35)",paddingLeft:12,marginBottom:5,letterSpacing:1}}>SLAG – SENASTE RUNDOR</div>
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={chartData}>
-                  <XAxis dataKey="name" tick={{fill:"rgba(168,213,162,0.35)",fontSize:9}} axisLine={false} tickLine={false}/>
-                  <YAxis domain={["auto","auto"]} tick={{fill:"rgba(168,213,162,0.35)",fontSize:9}} axisLine={false} tickLine={false} width={26}/>
-                  <Tooltip contentStyle={{background:"#0d2b14",border:"1px solid rgba(168,213,162,0.2)",borderRadius:8,fontSize:12}}/>
-                  <Line type="monotone" dataKey="Slag" stroke="#ffffff" strokeWidth={2} dot={{fill:"#ffffff",r:3}}/>
-                </LineChart>
-              </ResponsiveContainer>
+              <SvgLineChart data={chartData} height={120}/>
             </div>
           )}
 
@@ -818,15 +880,7 @@ window.GolfApp = function App() {
                 })()}
               </Block>}
               {last10.length>=2&&<Block title="Slag – senaste 10 rundor">
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={chartData} barSize={16}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,213,162,0.07)"/>
-                    <XAxis dataKey="name" tick={{fill:"rgba(168,213,162,0.35)",fontSize:9}} axisLine={false} tickLine={false}/>
-                    <YAxis domain={["auto","auto"]} tick={{fill:"rgba(168,213,162,0.35)",fontSize:9}} axisLine={false} tickLine={false} width={26}/>
-                    <Tooltip contentStyle={{background:"#0d2b14",border:"1px solid rgba(168,213,162,0.2)",borderRadius:8,fontSize:12}}/>
-                    <Bar dataKey="Slag" fill="#4a9e4a" radius={[4,4,0,0]}/>
-                  </BarChart>
-                </ResponsiveContainer>
+                <SvgBarChart data={chartData} height={140}/>
               </Block>}
               {["park","skog"].map(key=>{
                 const cr=rounds.filter(r=>r.courseKey===key);
