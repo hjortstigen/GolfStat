@@ -1233,8 +1233,9 @@ window.GolfApp = function App() {
   );
 }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(
-      React.createElement(window.GolfApp)
+    ReactDOM.render(
+      React.createElement(window.GolfApp),
+      document.getElementById("root")
     );
   </script>
 </body>
