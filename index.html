@@ -880,39 +880,19 @@ window.GolfApp = function App() {
                   <Pip label="Snitt" value={avg(scores)}/><Pip label="Bäst" value={Math.min(...scores)}/><Pip label="Sämst" value={Math.max(...scores)}/>
                 </div>
               </Block>
-              {girArr.length>0&&<Block title="Greenträff vid Inspel per runda">
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                  <Pip label="Snitt" value={`${girArr.length ? Math.round(girArr.reduce((a,b)=>a+b,0)/girArr.length/18*100) : 0}%`}/>
-                  <Pip label="Bäst" value={Math.max(...girArr)}/>
-                  <Pip label="Sämst" value={Math.min(...girArr)}/>
-                </div>
+              {last10.length>=2&&<Block title="Slag – senaste 10 rundor">
+                <SvgBarChart data={chartData} height={140}/>
               </Block>}
-              {puttsArr.length>0&&<Block title="Puttar per runda">
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                  <Pip label="Snitt" value={avg(puttsArr)}/><Pip label="Bäst" value={Math.min(...puttsArr)}/><Pip label="Sämst" value={Math.max(...puttsArr)}/>
-                </div>
-              </Block>}
-              {(()=>{
-                const missGirHoles = rounds.flatMap(r=>r.holes||[]).filter(h=>h.gir===false && h.putts!=null);
-                if(!missGirHoles.length) return null;
-                const saved = missGirHoles.filter(h=>h.putts<=1).length;
-                const total = missGirHoles.length;
-                const pct = Math.round(saved/total*100);
-                return (
-                  <Block title="Scrambling">
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                      <div style={{textAlign:"center"}}>
-                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{pct}%</div>
-                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Snitt</div>
-                      </div>
-                      <div style={{textAlign:"center"}}>
-                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{saved}/{total}</div>
-                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Hål</div>
-                      </div>
-                    </div>
-                  </Block>
-                );
-              })()}
+              {["park","skog"].map(key=>{
+                const cr=rounds.filter(r=>r.courseKey===key);
+                if(!cr.length) return null;
+                const cs=cr.map(r=>r.score);
+                return <Block key={key} title={`${COURSES[key].emoji} ${COURSES[key].name} (${cr.length} rundor)`}>
+                  <div style={{display:"flex",gap:20}}>
+                    <Mini label="Snitt" value={avg(cs)}/><Mini label="Bäst" value={Math.min(...cs)}/><Mini label="Sämst" value={Math.max(...cs)}/>
+                  </div>
+                </Block>;
+              })}
               {fwArr.length>0&&<Block title="Fairways">
                 {(()=>{
                   const allFwHoles = rounds.flatMap(r=>(r.holes||[]).filter(h=>h.par>=4));
@@ -946,19 +926,39 @@ window.GolfApp = function App() {
                   );
                 })()}
               </Block>}
-              {last10.length>=2&&<Block title="Slag – senaste 10 rundor">
-                <SvgBarChart data={chartData} height={140}/>
+              {girArr.length>0&&<Block title="Greenträff vid Inspel per runda">
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                  <Pip label="Snitt" value={`${girArr.length ? Math.round(girArr.reduce((a,b)=>a+b,0)/girArr.length/18*100) : 0}%`}/>
+                  <Pip label="Bäst" value={Math.max(...girArr)}/>
+                  <Pip label="Sämst" value={Math.min(...girArr)}/>
+                </div>
               </Block>}
-              {["park","skog"].map(key=>{
-                const cr=rounds.filter(r=>r.courseKey===key);
-                if(!cr.length) return null;
-                const cs=cr.map(r=>r.score);
-                return <Block key={key} title={`${COURSES[key].emoji} ${COURSES[key].name} (${cr.length} rundor)`}>
-                  <div style={{display:"flex",gap:20}}>
-                    <Mini label="Snitt" value={avg(cs)}/><Mini label="Bäst" value={Math.min(...cs)}/><Mini label="Sämst" value={Math.max(...cs)}/>
-                  </div>
-                </Block>;
-              })}
+              {(()=>{
+                const missGirHoles = rounds.flatMap(r=>r.holes||[]).filter(h=>h.gir===false && h.putts!=null);
+                if(!missGirHoles.length) return null;
+                const saved = missGirHoles.filter(h=>h.putts<=1).length;
+                const total = missGirHoles.length;
+                const pct = Math.round(saved/total*100);
+                return (
+                  <Block title="Scrambling">
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{pct}%</div>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Snitt</div>
+                      </div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{saved}/{total}</div>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Hål</div>
+                      </div>
+                    </div>
+                  </Block>
+                );
+              })()}
+              {puttsArr.length>0&&<Block title="Puttar per runda">
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                  <Pip label="Snitt" value={avg(puttsArr)}/><Pip label="Bäst" value={Math.min(...puttsArr)}/><Pip label="Sämst" value={Math.max(...puttsArr)}/>
+                </div>
+              </Block>}
 
               {/* Score distribution */}
               {(()=>{
@@ -1063,8 +1063,6 @@ window.GolfApp = function App() {
                     text:`rgb(${r},${g},${b})`,
                   };
                 };
-                const heatGreen = heatColor;
-                const heatRed   = heatColor;
 
                 const LenFilter = () => (
                   <div style={{display:"flex",gap:4,marginBottom:12}}>
@@ -1091,7 +1089,7 @@ window.GolfApp = function App() {
                           {greenZones.map((zid,i)=>{
                             const n=counts[zid]||0;
                             const pct=withGZ.length?Math.round(n/withGZ.length*100):0;
-                            const hc=heatGreen(pct,maxPct);
+                            const hc=heatColor(pct,maxPct);
                             return (
                               <div key={i} style={{padding:"8px 4px",borderRadius:10,textAlign:"center",background:hc.bg,border:`1px solid ${hc.border}`}}>
                                 <div style={{fontSize:11,color:"rgba(168,213,162,0.5)",marginBottom:2}}>{zid}</div>
@@ -1116,7 +1114,7 @@ window.GolfApp = function App() {
                             if(!zid) return <div key={i}/>;
                             const n=counts[zid]||0;
                             const pct=withMZ.length?Math.round(n/withMZ.length*100):0;
-                            const hc=heatRed(pct,maxPct);
+                            const hc=heatColor(pct,maxPct);
                             return (
                               <div key={i} style={{padding:"8px 4px",borderRadius:10,textAlign:"center",background:hc.bg,border:`1px solid ${hc.border}`}}>
                                 <div style={{fontSize:11,color:"rgba(168,213,162,0.5)",marginBottom:2}}>{missLabel[zid]}</div>
