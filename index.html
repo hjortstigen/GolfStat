@@ -21,9 +21,9 @@
 <body>
   <div id="root"></div>
 
-  <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js?v=1.3"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js?v=1.3"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=1.3"></script>
 
   <script type="text/babel">
 const { useState, useEffect } = React;
@@ -596,6 +596,125 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+function SplashScreen({round, prevRounds, onClose, onUndo}) {
+  const course = COURSES[round.courseKey];
+  const par = course?.par ?? 72;
+  const diff = round.score - par;
+  const diffS = diff === 0 ? "E" : diff > 0 ? `+${diff}` : `${diff}`;
+  const diffColor = diff < 0 ? "#5fca5f" : diff > 0 ? "#e09050" : "#ffffff";
+
+  // Insights
+  const insights = [];
+  const prevScores = prevRounds.map(r=>r.score);
+  const prevPutts  = prevRounds.filter(r=>r.putts).map(r=>r.putts);
+  const prevGir    = prevRounds.filter(r=>r.gir!=null).map(r=>r.gir);
+
+  // Records
+  if (prevScores.length > 0) {
+    if (round.score < Math.min(...prevScores)) insights.push({emoji:"🏆", text:"Nytt rekord – bästa runda någonsin!"});
+    else if (round.score === Math.min(...prevScores)) insights.push({emoji:"🏆", text:"Matchar ditt personliga rekord!"});
+  }
+  if (round.putts && prevPutts.length > 0 && round.putts < Math.min(...prevPutts))
+    insights.push({emoji:"🏆", text:"Nytt puttrekord!"});
+  if (round.gir != null && prevGir.length > 0 && round.gir > Math.max(...prevGir))
+    insights.push({emoji:"🏆", text:"Nytt GIR-rekord!"});
+
+  // vs average
+  if (prevScores.length >= 2) {
+    const snitt = prevScores.reduce((a,b)=>a+b,0)/prevScores.length;
+    const diff2 = round.score - snitt;
+    if (diff2 < -2) insights.push({emoji:"📈", text:`${Math.abs(diff2).toFixed(1)} slag bättre än ditt snitt (${snitt.toFixed(1)})`});
+    else if (diff2 > 2) insights.push({emoji:"📉", text:`${diff2.toFixed(1)} slag sämre än ditt snitt (${snitt.toFixed(1)})`});
+    else insights.push({emoji:"〰️", text:`Nära ditt snitt på ${snitt.toFixed(1)} slag`});
+  }
+
+  // Streaks – rounds under par
+  if (diff <= 0 && prevRounds.length > 0) {
+    const streak = prevRounds.filter(r=>r.score-(COURSES[r.courseKey]?.par??72)<=0).length;
+    if (streak >= 2) insights.push({emoji:"🔥", text:`${streak+1} rundor i rad under eller på par!`});
+  }
+  // Streak – improving scores
+  if (prevRounds.length >= 2) {
+    const last3 = [...prevRounds].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,2).map(r=>r.score);
+    if (round.score < last3[0] && last3[0] < last3[1])
+      insights.push({emoji:"🔥", text:"3 rundor i rad med förbättrat resultat!"});
+  }
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      zIndex:200,padding:"20px",
+    }}>
+      <div style={{
+        background:"linear-gradient(160deg,#0d2b14 0%,#0a1f0f 100%)",
+        border:"1px solid rgba(168,213,162,0.25)",
+        borderRadius:24,padding:"28px 24px",width:"100%",maxWidth:390,
+      }}>
+        {/* Course + date */}
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>
+            {course?.name} · {round.date}
+          </div>
+          {/* Big score */}
+          <div style={{fontSize:72,fontWeight:"bold",color:diffColor,lineHeight:1}}>{diffS}</div>
+          <div style={{fontSize:18,color:"rgba(255,255,255,0.6)",marginTop:4}}>{round.score} slag</div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,
+          background:"rgba(255,255,255,0.04)",borderRadius:14,padding:"14px 8px",
+          marginBottom:20,
+        }}>
+          {[
+            {label:"Slag", value:round.score},
+            {label:"GIR",  value:round.gir??"–"},
+            {label:"Putt", value:round.putts??"–"},
+            {label:"FW",   value:round.fairways??"–"},
+          ].map(s=>(
+            <div key={s.label} style={{textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:"bold",color:"#ffffff"}}>{s.value}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.8,marginTop:2}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Insights */}
+        {insights.length > 0 && (
+          <div style={{marginBottom:20}}>
+            {insights.map((ins,i)=>(
+              <div key={i} style={{
+                display:"flex",alignItems:"center",gap:10,
+                padding:"10px 14px",borderRadius:12,marginBottom:6,
+                background:"rgba(168,213,162,0.07)",
+                border:"1px solid rgba(168,213,162,0.15)",
+              }}>
+                <span style={{fontSize:18}}>{ins.emoji}</span>
+                <span style={{fontSize:13,color:"rgba(255,255,255,0.85)"}}>{ins.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{
+            flex:2,padding:"15px",background:"#2d6e2d",border:"none",
+            borderRadius:12,color:"#ffffff",fontSize:16,cursor:"pointer",
+            fontFamily:"inherit",fontWeight:"bold",letterSpacing:.5,
+          }}>OK</button>
+          <button onClick={onUndo} style={{
+            flex:1,padding:"15px",background:"transparent",
+            border:"1px solid rgba(255,255,255,0.2)",
+            borderRadius:12,color:"rgba(255,255,255,0.5)",fontSize:13,cursor:"pointer",
+            fontFamily:"inherit",
+          }}>Ångra</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 window.GolfApp = function App() {
   const [rounds, setRounds] = useState(load);
   const [view, setView] = useState("home");
@@ -651,18 +770,23 @@ window.GolfApp = function App() {
   const lat = sorted[0];
   const latDiff = lat ? lat.score-(COURSES[lat.courseKey]?.par??72) : null;
 
+  const [splash, setSplash] = useState(null); // holds the saved round for splash display
+
   function handleDone(round) {
-    const newRounds = [{id:Date.now(),...round},...rounds];
+    const newRound = {id:Date.now(),...round};
+    const newRounds = [newRound,...rounds];
     setRounds(newRounds);
-    setView("history");
+    setSplash({round: newRound, prevRounds: rounds});
     syncToGist(newRounds, true);
   }
 
   function handleEditDone(round) {
-    const newRounds = rounds.map(r => r.id===editRound.id ? {...round, id:editRound.id} : r);
+    const updatedRound = {...round, id:editRound.id};
+    const newRounds = rounds.map(r => r.id===editRound.id ? updatedRound : r);
     setRounds(newRounds);
+    const originalRound = editRound;
     setEditRound(null);
-    setView("history");
+    setSplash({round: updatedRound, prevRounds: rounds.filter(r=>r.id!==editRound.id), originalRound});
     syncToGist(newRounds, true);
   }
 
@@ -1262,6 +1386,28 @@ window.GolfApp = function App() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Splash screen */}
+      {splash && (
+        <SplashScreen
+          round={splash.round}
+          prevRounds={splash.prevRounds}
+          onClose={()=>{setSplash(null);setView("home");}}
+          onUndo={()=>{
+            if (splash.originalRound) {
+              // Undo edit – restore original round and go back to editing
+              setRounds(rounds.map(r=>r.id===splash.round.id ? splash.originalRound : r));
+              setEditRound(splash.originalRound);
+            } else {
+              // Undo new round – remove it
+              setRounds(splash.prevRounds);
+              setEditRound(splash.round);
+            }
+            setSplash(null);
+            setView("editing");
+          }}
+        />
       )}
 
       {/* Confirm clear modal */}
