@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0a1f0f" />
   <title>Hooks Golf Stats</title>
@@ -125,7 +126,19 @@ const COURSES = {
 const KEY = "hooks_golf_v2";
 const GIST_TOKEN_KEY = "hooks_golf_gist_token";
 const GIST_ID_KEY   = "hooks_golf_gist_id";
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)||"[]"); } catch { return []; } };
+const load = () => {
+  try {
+    const rounds = JSON.parse(localStorage.getItem(KEY)||"[]");
+    // Migrate old fairway false → "Miss H"
+    return rounds.map(r => ({
+      ...r,
+      holes: (r.holes||[]).map(h => ({
+        ...h,
+        fairway: h.fairway === false ? "Miss H" : h.fairway,
+      }))
+    }));
+  } catch { return []; }
+};
 const save = r => localStorage.setItem(KEY, JSON.stringify(r));
 const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "–";
 
@@ -273,7 +286,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
     ? initialData.holes.map(h => h.putts!=null ? String(h.putts) : "2")
     : Array(18).fill("2"));
   const [fw,       setFw]       = useState(() => initialData?.holes
-    ? initialData.holes.map(h => h.fairway??true)
+    ? initialData.holes.map(h => h.fairway===false ? "Miss H" : h.fairway===true ? true : (h.fairway??true))
     : Array(18).fill(true));
   const [gir,      setGir]      = useState(() => initialData?.holes
     ? initialData.holes.map(h => h.gir??true)
@@ -338,6 +351,8 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
       score: total,
       putts: totalPutts||null,
       fairways: fw.filter(f=>f===true).length,
+      fairwayMissV: fw.filter(f=>f==="Miss V").length,
+      fairwayMissH: fw.filter(f=>f==="Miss H").length,
       gir: gir.filter(g=>g===true).length,
       holes: scores.map((s,i)=>({
         hole:i+1, par:course.holes[i].par,
@@ -451,16 +466,31 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
         {/* Fairway */}
         {h.par>=4 && (
           <div style={{marginBottom:12}}>
-            <span style={C.lbl}>Fairway</span>
+            <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:5}}>
+              <span style={{...C.lbl,flex:2,margin:0}}>Fairway</span>
+              <div style={{flex:2,display:"flex",justifyContent:"center"}}>
+                <span style={{...C.lbl,margin:0}}>Miss</span>
+              </div>
+            </div>
             <div style={{display:"flex",gap:8}}>
-              {[["✓ Träffad",true],["✗ Missad",false]].map(([lbl,val])=>(
-                <button key={lbl} onClick={()=>togFw(val)} style={{
-                  flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:13,
-                  background:fw[hole]===val?(val?"rgba(95,202,95,0.25)":"rgba(220,80,80,0.25)"):"rgba(255,255,255,0.05)",
-                  border:fw[hole]===val?`1px solid ${val?"#5fca5f":"#e05050"}`:"1px solid rgba(168,213,162,0.14)",
-                  color:fw[hole]===val?(val?"#5fca5f":"#e05050"):"rgba(255,255,255,0.55)",
-                }}>{lbl}</button>
-              ))}
+              <button onClick={()=>togFw(true)} style={{
+                flex:2,padding:"9px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:13,
+                background:fw[hole]===true?"rgba(95,202,95,0.25)":"rgba(255,255,255,0.05)",
+                border:fw[hole]===true?"1px solid #5fca5f":"1px solid rgba(168,213,162,0.14)",
+                color:fw[hole]===true?"#5fca5f":"rgba(255,255,255,0.55)",
+              }}>✓ Träffad</button>
+              <button onClick={()=>togFw("Miss V")} style={{
+                flex:1,padding:"9px 4px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:12,
+                background:fw[hole]==="Miss V"?"rgba(220,140,50,0.25)":"rgba(255,255,255,0.05)",
+                border:fw[hole]==="Miss V"?"1px solid #e09050":"1px solid rgba(168,213,162,0.14)",
+                color:fw[hole]==="Miss V"?"#e09050":"rgba(255,255,255,0.55)",
+              }}>← V</button>
+              <button onClick={()=>togFw("Miss H")} style={{
+                flex:1,padding:"9px 4px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:12,
+                background:fw[hole]==="Miss H"?"rgba(220,140,50,0.25)":"rgba(255,255,255,0.05)",
+                border:fw[hole]==="Miss H"?"1px solid #e09050":"1px solid rgba(168,213,162,0.14)",
+                color:fw[hole]==="Miss H"?"#e09050":"rgba(255,255,255,0.55)",
+              }}>H →</button>
             </div>
           </div>
         )}
@@ -815,7 +845,7 @@ window.GolfApp = function App() {
                           <td style={{padding:"5px",textAlign:"center",fontWeight:"bold",color:si.color}}>{hx.strokes}</td>
                           <td style={{padding:"5px",textAlign:"center",color:si.color}}>{d===0?"E":d>0?`+${d}`:d}</td>
                           <td style={{padding:"5px",textAlign:"center",color:"rgba(168,213,162,0.5)"}}>{hx.putts??"–"}</td>
-                          <td style={{padding:"5px",textAlign:"center"}}>{hx.par>=4?(hx.fairway===true?"✓":hx.fairway===false?"✗":"–"):"–"}</td>
+                          <td style={{padding:"5px",textAlign:"center"}}>{hx.par>=4?(hx.fairway===true?"✓":hx.fairway==="Miss V"?"←":hx.fairway==="Miss H"?"→":hx.fairway===false?"→":"–"):"–"}</td>
                           <td style={{padding:"5px",textAlign:"center"}}>{hx.gir===true?"✓":hx.gir===false?"✗":"–"}</td>
                         </tr>
                       );
@@ -862,19 +892,56 @@ window.GolfApp = function App() {
                   <Pip label="Snitt" value={avg(puttsArr)}/><Pip label="Bäst" value={Math.min(...puttsArr)}/><Pip label="Sämst" value={Math.max(...puttsArr)}/>
                 </div>
               </Block>}
-              {fwArr.length>0&&<Block title="Fairways träffade">
+              {(()=>{
+                const missGirHoles = rounds.flatMap(r=>r.holes||[]).filter(h=>h.gir===false && h.putts!=null);
+                if(!missGirHoles.length) return null;
+                const saved = missGirHoles.filter(h=>h.putts<=1).length;
+                const total = missGirHoles.length;
+                const pct = Math.round(saved/total*100);
+                return (
+                  <Block title="Scrambling">
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{pct}%</div>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Snitt</div>
+                      </div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:22,fontWeight:"bold",color:"#ffffff"}}>{saved}/{total}</div>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Hål</div>
+                      </div>
+                    </div>
+                  </Block>
+                );
+              })()}
+              {fwArr.length>0&&<Block title="Fairways">
                 {(()=>{
-                  const totalFwHoles = rounds.reduce((a,r)=>{
-                    const c = COURSES[r.courseKey];
-                    return a + (c ? c.holes.filter(h=>h.par>=4).length : 14);
-                  },0);
-                  const totalFwHit = fwArr.reduce((a,b)=>a+b,0);
-                  const pct = totalFwHoles ? Math.round(totalFwHit/totalFwHoles*100) : 0;
+                  const allFwHoles = rounds.flatMap(r=>(r.holes||[]).filter(h=>h.par>=4));
+                  const hit   = allFwHoles.filter(h=>h.fairway===true).length;
+                  const missV = allFwHoles.filter(h=>h.fairway==="Miss V").length;
+                  const missH = allFwHoles.filter(h=>h.fairway==="Miss H" || h.fairway===false).length;
+                  const total = allFwHoles.length;
+                  const pct = n => total ? Math.round(n/total*100)+"%" : "–";
+                  const BarRow = ({label,n,color}) => (
+                    <div style={{marginBottom:6}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                        <span style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{label}</span>
+                        <span style={{fontSize:12,color:"#ffffff",fontWeight:"bold"}}>{n} ({pct(n)})</span>
+                      </div>
+                      <div style={{height:6,background:"rgba(168,213,162,0.1)",borderRadius:3}}>
+                        <div style={{height:6,background:color,borderRadius:3,width:pct(n)}}/>
+                      </div>
+                    </div>
+                  );
                   return (
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                      <Pip label="Snitt" value={`${pct}%`}/>
-                      <Pip label="Bäst" value={Math.max(...fwArr)}/>
-                      <Pip label="Sämst" value={Math.min(...fwArr)}/>
+                    <div>
+                      <BarRow label="✓ Träffad" n={hit}   color="#5fca5f"/>
+                      <BarRow label="← Miss V"  n={missV} color="#e09050"/>
+                      <BarRow label="→ Miss H"  n={missH} color="#e09050"/>
+                      <div style={{marginTop:8,display:"flex",gap:20}}>
+                        <Pip label="Bäst"  value={Math.max(...fwArr)}/>
+                        <Pip label="Snitt" value={avg(fwArr)}/>
+                        <Pip label="Sämst" value={Math.min(...fwArr)}/>
+                      </div>
                     </div>
                   );
                 })()}
@@ -1232,6 +1299,8 @@ window.GolfApp = function App() {
     </div>
   );
 }
+
+
 
     ReactDOM.render(
       React.createElement(window.GolfApp),
