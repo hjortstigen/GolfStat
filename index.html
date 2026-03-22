@@ -1327,6 +1327,51 @@ window.GolfApp = function App() {
                 );
               })()}
 
+              {/* Putt-% per avstånd */}
+              {(()=>{
+                const DISTS = ["<1","1-1.5","1.5-3","3-5",">5"];
+                const DIST_COLORS = {"<1":"#FFD700","1-1.5":"#5fca5f","1.5-3":"#a8d5a2","3-5":"#e09050",">5":"#e05050"};
+                const allHoles = rounds.flatMap(r=>r.holes||[]);
+                // Build a flat list of every individual putt attempt with whether it was holed
+                const puttAttempts = allHoles.flatMap(h=>{
+                  const dists = h.puttDist||[];
+                  const numPutts = h.putts||0;
+                  if(!dists.length || !numPutts) return [];
+                  return dists.slice(0,numPutts).map((dist,pi)=>({
+                    dist,
+                    holed: pi === numPutts-1, // last putt = holed
+                  }));
+                });
+                if(!puttAttempts.length) return null;
+                return (
+                  <Block title="Puttning – % hålad per avstånd">
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1,marginBottom:12}}>
+                      Av alla puttar på en given längd – hur många gick i?
+                    </div>
+                    {DISTS.map(d=>{
+                      const attempts = puttAttempts.filter(p=>p.dist===d);
+                      const holed    = attempts.filter(p=>p.holed).length;
+                      const total    = attempts.length;
+                      const pct      = total ? Math.round(holed/total*100) : null;
+                      if(!total) return null;
+                      return (
+                        <div key={d} style={{marginBottom:10}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:3}}>
+                            <span style={{fontSize:13,color:"rgba(255,255,255,0.8)",fontWeight:"bold"}}>{d} m</span>
+                            <span style={{fontSize:12,color:DIST_COLORS[d],fontWeight:"bold"}}>
+                              {pct}% <span style={{color:"rgba(255,255,255,0.35)",fontWeight:"normal",fontSize:11}}>({holed}/{total} puttar)</span>
+                            </span>
+                          </div>
+                          <div style={{height:8,background:"rgba(168,213,162,0.08)",borderRadius:4}}>
+                            <div style={{height:8,background:DIST_COLORS[d],borderRadius:4,width:pct+"%",opacity:0.85}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Block>
+                );
+              })()}
+
               {/* Green zone + Miss zone statistik */}
               {(()=>{
                 const allHoles = rounds.flatMap(r=>r.holes||[]);
