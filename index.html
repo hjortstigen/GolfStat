@@ -11,7 +11,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0a1f0f}
-#root{height:100%;font-family:Georgia,serif;color:#fff}
+#root{height:100%}
 </style>
 </head>
 <body>
@@ -19,8 +19,8 @@ html,body{height:100%;background:#0a1f0f}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script type="text/babel" data-presets="react">
-import { useState, useEffect } from "react";
+<script type="text/babel" data-presets="react,env">
+const { useState, useEffect } = React;
 
 // Simple SVG line chart (replaces Recharts LineChart)
 function SvgLineChart({ data, width = 380, height = 120 }) {
