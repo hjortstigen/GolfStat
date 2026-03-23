@@ -188,7 +188,7 @@ const scoreInfo = (s, par) => {
 const C = {
   bg: "linear-gradient(160deg,#0a1f0f 0%,#0d2b14 40%,#0a1a0c 100%)",
   card: {background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,204,0,0.35)",borderRadius:14,padding:"14px 16px",marginBottom:12},
-  cardHL: {background:"rgba(168,213,162,0.06)",border:"1px solid rgba(255,204,0,0.5)",borderRadius:14,padding:"14px 16px",marginBottom:12},
+  cardHL: {background:"rgba(168,213,162,0.06)",border:"1px solid rgba(168,213,162,0.35)",borderRadius:14,padding:"14px 16px",marginBottom:12},
   btn: {width:"100%",padding:"14px",background:"#2d6e2d",border:"none",borderRadius:12,color:"#e8f0e8",fontSize:15,cursor:"pointer",fontFamily:"inherit",fontWeight:"bold"},
   btnO: {padding:"12px 18px",background:"transparent",border:"1px solid rgba(168,213,162,0.3)",borderRadius:12,color:"#ffffff",fontSize:14,cursor:"pointer",fontFamily:"inherit"},
   btnSm: {padding:"7px 13px",background:"rgba(45,110,45,0.35)",border:"1px solid rgba(168,213,162,0.18)",borderRadius:8,color:"#ffffff",fontSize:12,cursor:"pointer",fontFamily:"inherit"},
@@ -934,7 +934,7 @@ window.GolfApp = function App() {
           {Object.entries(COURSES).map(([key,c])=>(
             <button key={key} onClick={()=>{setSelCourse(key);setView("playing");}} style={{
               width:"100%",marginBottom:12,padding:"18px 20px",textAlign:"left",cursor:"pointer",
-              background:"rgba(168,213,162,0.04)",border:"1px solid rgba(255,204,0,0.35)",
+              background:"rgba(168,213,162,0.04)",border:"1px solid rgba(168,213,162,0.35)",
               borderRadius:14,color:"#e8f0e8",fontFamily:"inherit",
             }}>
               <div style={{fontSize:24,marginBottom:4}}>{c.emoji}</div>
@@ -1372,7 +1372,7 @@ window.GolfApp = function App() {
                 );
               })()}
 
-              {/* Green zone + Miss zone statistik */}
+              {/* Kombinerat Green+Miss rutnät */}
               {(()=>{
                 const allHoles = rounds.flatMap(r=>r.holes||[]);
                 const filtered = statLenFilter ? allHoles.filter(h=>h.inspelLen===statLenFilter) : allHoles;
@@ -1380,21 +1380,69 @@ window.GolfApp = function App() {
                 const withMZ = filtered.filter(h=>h.missZone);
                 if(!withGZ.length && !withMZ.length) return null;
 
-                const greenZones = ["BV","B","BH","V","C","H","FV","F","FH"];
-                const missZones  = ["BV","B","BH","V",null,"H","FV","F","FH"];
+                const gzCounts = Object.fromEntries(
+                  ["BV","B","BH","V","C","H","FV","F","FH"].map(z=>[z, withGZ.filter(h=>h.greenZone===z).length])
+                );
+                const mzCounts = Object.fromEntries(
+                  ["BV","B","BH","V","H","FV","F","FH"].map(z=>[z, withMZ.filter(h=>h.missZone===z).length])
+                );
+                const total = withGZ.length + withMZ.length;
+                const allMax = Math.max(...Object.values(gzCounts), ...Object.values(mzCounts), 1);
 
-                const heatColor = (pct, max) => {
-                  if(pct===0) return {bg:"rgba(255,255,255,0.03)", border:"rgba(168,213,162,0.1)", text:"rgba(168,213,162,0.25)"};
-                  const t = max>0?pct/max:0;
-                  const r = Math.round(80  + t*148);
-                  const g = Math.round(140 + t*73);
-                  const b = Math.round(50  - t*30);
+                const greenHeat = (z) => {
+                  const n = gzCounts[z]||0;
+                  const pct = total ? Math.round(n/total*100) : 0;
+                  const t = allMax>0 ? n/allMax : 0;
+                  if(!n) return {bg:"rgba(255,255,255,0.03)",border:"rgba(95,202,95,0.1)",text:"rgba(95,202,95,0.25)",pct:0,n:0};
                   return {
-                    bg:`rgba(${r},${g},${b},${0.15+t*0.35})`,
-                    border:`rgba(${r},${g},${b},${0.3+t*0.4})`,
-                    text:`rgb(${r},${g},${b})`,
+                    bg:`rgba(${Math.round(80+t*148)},${Math.round(140+t*73)},${Math.round(50-t*30)},${0.15+t*0.35})`,
+                    border:`rgba(${Math.round(80+t*148)},${Math.round(140+t*73)},${Math.round(50-t*30)},${0.4+t*0.4})`,
+                    text:`rgb(${Math.round(80+t*148)},${Math.round(140+t*73)},${Math.round(50-t*30)})`,
+                    pct, n,
                   };
                 };
+                const missHeat = (z) => {
+                  const n = mzCounts[z]||0;
+                  const pct = total ? Math.round(n/total*100) : 0;
+                  const t = allMax>0 ? n/allMax : 0;
+                  if(!n) return {bg:"rgba(255,255,255,0.03)",border:"rgba(220,80,80,0.1)",text:"rgba(220,80,80,0.25)",pct:0,n:0};
+                  return {
+                    bg:`rgba(${Math.round(180+t*44)},${Math.round(80+t*20)},${Math.round(60-t*40)},${0.15+t*0.35})`,
+                    border:`rgba(${Math.round(180+t*44)},${Math.round(80+t*20)},${Math.round(60-t*40)},${0.4+t*0.4})`,
+                    text:`rgb(${Math.round(180+t*44)},${Math.round(80+t*20)},${Math.round(60-t*40)})`,
+                    pct, n,
+                  };
+                };
+
+                const GCell = ({z, label}) => {
+                  const h = greenHeat(z);
+                  return (
+                    <div style={{padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}>
+                      <div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>{label}</div>
+                      <div style={{fontSize:13,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>
+                      {h.n>0 && <div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}
+                    </div>
+                  );
+                };
+                const MCell = ({z, label}) => {
+                  const h = missHeat(z);
+                  return (
+                    <div style={{padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}>
+                      <div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>{label}</div>
+                      <div style={{fontSize:13,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>
+                      {h.n>0 && <div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}
+                    </div>
+                  );
+                };
+                const Empty = () => <div/>;
+
+                // 5×5 grid layout:
+                // Row 0: [empty] [MZ:LV] [MZ:L]  [MZ:LH] [empty]
+                // Row 1: [MZ:V]  [GZ:BV] [GZ:B]  [GZ:BH] [MZ:H]
+                // Row 2: [MZ:V*] [GZ:V]  [GZ:C]  [GZ:H]  [MZ:H*]  <- V/H repeated
+                // Row 3: [MZ:V*] [GZ:FV] [GZ:F]  [GZ:FH] [MZ:H*]
+                // Row 4: [empty] [MZ:KV] [MZ:K]  [MZ:KH] [empty]
+                // MZ keys: BV=LV, B=L, BH=LH, V=V, H=H, FV=KV, F=K, FH=KH
 
                 const LenFilter = () => (
                   <div style={{display:"flex",gap:4,marginBottom:12}}>
@@ -1410,56 +1458,57 @@ window.GolfApp = function App() {
                   </div>
                 );
 
-                return <>
-                  {withGZ.length>0 && (()=>{
-                    const counts = Object.fromEntries(greenZones.map(z=>[z, withGZ.filter(h=>h.greenZone===z).length]));
-                    const maxPct = Math.max(...greenZones.map(z=>withGZ.length?counts[z]/withGZ.length*100:0));
-                    return (
-                      <Block title={`Greenträff – zoner (${withGZ.length})`}>
-                        <LenFilter/>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
-                          {greenZones.map((zid,i)=>{
-                            const n=counts[zid]||0;
-                            const pct=withGZ.length?Math.round(n/withGZ.length*100):0;
-                            const hc=heatColor(pct,maxPct);
-                            return (
-                              <div key={i} style={{padding:"8px 4px",borderRadius:10,textAlign:"center",background:hc.bg,border:`1px solid ${hc.border}`}}>
-                                <div style={{fontSize:11,color:"rgba(168,213,162,0.5)",marginBottom:2}}>{zid}</div>
-                                <div style={{fontSize:16,fontWeight:"bold",color:hc.text}}>{pct>0?pct+"%":"–"}</div>
-                                <div style={{fontSize:9,color:"rgba(168,213,162,0.35)"}}>{n>0?n:""}</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </Block>
-                    );
-                  })()}
-                  {withMZ.length>0 && (()=>{
-                    const counts = Object.fromEntries(missZones.filter(Boolean).map(z=>[z, withMZ.filter(h=>h.missZone===z).length]));
-                    const maxPct = Math.max(...missZones.filter(Boolean).map(z=>withMZ.length?counts[z]/withMZ.length*100:0));
-                    const missLabel = {BV:"LV",B:"L",BH:"LH",V:"V",H:"H",FV:"KV",F:"K",FH:"KH"};
-                    return (
-                      <Block title={`Greenmiss – zoner (${withMZ.length})`}>
-                        <LenFilter/>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
-                          {missZones.map((zid,i)=>{
-                            if(!zid) return <div key={i}/>;
-                            const n=counts[zid]||0;
-                            const pct=withMZ.length?Math.round(n/withMZ.length*100):0;
-                            const hc=heatColor(pct,maxPct);
-                            return (
-                              <div key={i} style={{padding:"8px 4px",borderRadius:10,textAlign:"center",background:hc.bg,border:`1px solid ${hc.border}`}}>
-                                <div style={{fontSize:11,color:"rgba(168,213,162,0.5)",marginBottom:2}}>{missLabel[zid]}</div>
-                                <div style={{fontSize:16,fontWeight:"bold",color:hc.text}}>{pct>0?pct+"%":"–"}</div>
-                                <div style={{fontSize:9,color:"rgba(168,213,162,0.35)"}}>{n>0?n:""}</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </Block>
-                    );
-                  })()}
-                </>;
+                return (
+                  <Block title="Green & Miss – kombinerat">
+                    <LenFilter/>
+                    <div style={{fontSize:9,color:"rgba(168,213,162,0.35)",textAlign:"center",letterSpacing:1,marginBottom:4}}>BAK / LÅNG</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gridTemplateRows:"repeat(5,auto)",gap:4}}>
+
+                      {/* Rad 1: LV | L(span 3) | LH */}
+                      {(()=>{ const h=missHeat("BV"); return <div style={{gridColumn:"1",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>LV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=missHeat("B");  return <div style={{gridColumn:"2/5",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>L</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=missHeat("BH"); return <div style={{gridColumn:"5",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>LH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+
+                      {/* V – span 3 rader kol1 rad2-4 */}
+                      {(()=>{ const h=missHeat("V"); return <div style={{gridColumn:"1",gridRow:"2/5",padding:"4px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:2}}>V</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:2}}>{h.n}</div>}</div>; })()}
+                      {/* H – span 3 rader kol5 rad2-4 */}
+                      {(()=>{ const h=missHeat("H"); return <div style={{gridColumn:"5",gridRow:"2/5",padding:"4px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:2}}>H</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:2}}>{h.n}</div>}</div>; })()}
+
+                      {/* Rad 2: BV | B | BH */}
+                      {(()=>{ const h=greenHeat("BV"); return <div style={{gridColumn:"2",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>BV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("B");  return <div style={{gridColumn:"3",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>B</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("BH"); return <div style={{gridColumn:"4",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>BH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+
+                      {/* Rad 3: V | C | H */}
+                      {(()=>{ const h=greenHeat("V");  return <div style={{gridColumn:"2",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>V</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("C");  return <div style={{gridColumn:"3",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>C</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("H");  return <div style={{gridColumn:"4",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>H</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+
+                      {/* Rad 4: FV | F | FH */}
+                      {(()=>{ const h=greenHeat("FV"); return <div style={{gridColumn:"2",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>FV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("F");  return <div style={{gridColumn:"3",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>F</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=greenHeat("FH"); return <div style={{gridColumn:"4",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>FH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+
+                      {/* Rad 5: KV | K(span 3) | KH */}
+                      {(()=>{ const h=missHeat("FV"); return <div style={{gridColumn:"1",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>KV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=missHeat("F");  return <div style={{gridColumn:"2/5",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>K</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+                      {(()=>{ const h=missHeat("FH"); return <div style={{gridColumn:"5",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>KH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
+
+                    </div>
+                    <div style={{fontSize:9,color:"rgba(168,213,162,0.35)",textAlign:"center",letterSpacing:1,marginTop:4}}>FRAM / KORT</div>
+                    <div style={{display:"flex",gap:12,justifyContent:"center",marginTop:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <div style={{width:10,height:10,borderRadius:2,background:"rgba(95,202,95,0.4)",border:"1px solid rgba(95,202,95,0.6)"}}/>
+                        <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Greenträff ({withGZ.length})</span>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <div style={{width:10,height:10,borderRadius:2,background:"rgba(220,80,80,0.4)",border:"1px solid rgba(220,80,80,0.6)"}}/>
+                        <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Greenmiss ({withMZ.length})</span>
+                      </div>
+                      <div style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>% av {total} hål totalt</div>
+                    </div>
+                  </Block>
+                );
               })()}
             </>
           }
