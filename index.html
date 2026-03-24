@@ -20,11 +20,9 @@
 </head>
 <body>
   <div id="root"></div>
-
   <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script type="text/babel">
 const { useState, useEffect } = React;
 
@@ -405,7 +403,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
       {/* top bar */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div>
-          <div style={{fontSize:12,color:"rgba(168,213,162,0.5)",letterSpacing:1}}>{course.name.toUpperCase()}</div>
+          <div style={{fontSize:12,color:"#FFCC00",letterSpacing:1,fontWeight:"bold"}}>{course.name.toUpperCase()}</div>
           <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{date}</div>
         </div>
         <div style={{textAlign:"right"}}>
@@ -415,7 +413,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
       </div>
 
       {/* hole card */}
-      <div style={{background:"rgba(168,213,162,0.06)",border:"2px solid #FFCC00",borderRadius:18,padding:"16px 18px",marginBottom:12}}>
+      <div style={{background:"rgba(168,213,162,0.06)",border:"1px solid #FFCC00",borderRadius:18,padding:"16px 18px",marginBottom:12}}>
         {/* hole header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
           <div>
@@ -646,7 +644,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
               })}
               <div style={{
                 display:"flex",alignItems:"center",justifyContent:"center",
-                background:"rgba(168,213,162,0.08)",border:"2px solid #FFCC00",
+                background:"rgba(168,213,162,0.08)",border:"1px solid #FFCC00",
                 borderRadius:8,padding:"0 8px",fontSize:12,fontWeight:"bold",
                 color:(()=>{const d=rowSum-(rowHoles.reduce((a,hx)=>a+hx.par,0));return d<0?"#e05050":d===0?"#5fca5f":"#808080";})(),minWidth:32,whiteSpace:"nowrap",
               }}>{rowSum||"–"}</div>
@@ -884,6 +882,7 @@ window.GolfApp = function App() {
       {/* HOME */}
       {view==="home" && (
         <div style={{padding:"18px 20px 0"}}>
+          <div style={{fontSize:17,color:"#FFCC00",marginBottom:14,fontWeight:"bold"}}>Sammanfattning</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
             {[
               {label:"Senaste",value:lat?(lat.score+(latDiff!==null?` (${latDiff>=0?"+":""}${latDiff})`:"")):"–"},
@@ -919,7 +918,7 @@ window.GolfApp = function App() {
             </div>
           )}
 
-          <button onClick={()=>setView("courseSelect")} style={C.btn}>+ Ny runda</button>
+          <button onClick={()=>setView("courseSelect")} style={{...C.btn,padding:"28px 14px"}}>+ Ny runda</button>
         </div>
       )}
 
@@ -929,7 +928,7 @@ window.GolfApp = function App() {
           <div style={{fontSize:17,color:"#FFCC00",marginBottom:14,fontWeight:"bold"}}>Välj bana & datum</div>
           <div style={{marginBottom:16}}>
             <span style={C.lbl}>Datum</span>
-            <input type="date" value={playDate} onChange={e=>setPlayDate(e.target.value)} style={C.inp}/>
+            <input type="date" value={playDate} onChange={e=>setPlayDate(e.target.value)} style={{...C.inp,background:"rgba(168,213,162,0.04)"}}/>
           </div>
           {Object.entries(COURSES).map(([key,c])=>(
             <button key={key} onClick={()=>{setSelCourse(key);setView("playing");}} style={{
@@ -1700,7 +1699,6 @@ window.GolfApp = function App() {
     </div>
   );
 }
-
 
 
     ReactDOM.render(
