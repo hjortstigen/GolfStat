@@ -1,22 +1,10 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0a1f0f" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" /><meta name="theme-color" content="#0a1f0f" />
   <title>Hooks Golf Stats</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #0a1f0f;
-      font-family: 'Georgia', 'Times New Roman', serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    #root { min-height: 100vh; }
-  </style>
+  <style>* { margin:0;padding:0;box-sizing:border-box; } body { background:#0a1f0f;font-family:'Georgia','Times New Roman',serif;-webkit-tap-highlight-color:transparent; } #root{min-height:100vh;}</style>
 </head>
 <body>
   <div id="root"></div>
@@ -121,6 +109,20 @@ const COURSES = {
   },
 };
 
+const EXTERNAL_COURSES = {
+  gotastrom: {
+    name: "Götaströms GK", fullName: "Götaströms GK", par: 72, emoji: "🏌️", location: "Skillingaryd",
+    holes: [
+      {n:1,par:4,hcp:3},{n:2,par:4,hcp:9},{n:3,par:3,hcp:5},{n:4,par:5,hcp:13},
+      {n:5,par:4,hcp:11},{n:6,par:3,hcp:15},{n:7,par:5,hcp:7},{n:8,par:3,hcp:17},
+      {n:9,par:4,hcp:1},{n:10,par:5,hcp:16},{n:11,par:3,hcp:14},{n:12,par:4,hcp:2},
+      {n:13,par:5,hcp:18},{n:14,par:4,hcp:8},{n:15,par:4,hcp:10},{n:16,par:5,hcp:4},
+      {n:17,par:3,hcp:6},{n:18,par:4,hcp:12},
+    ],
+  },
+};
+
+const getCourse = key => COURSES[key] || EXTERNAL_COURSES[key] || null;
 const KEY = "hooks_golf_v2";
 const GIST_TOKEN_KEY = "hooks_golf_gist_token";
 const GIST_ID_KEY   = "hooks_golf_gist_id";
@@ -276,7 +278,7 @@ function MissMap({selected, onSelect}) {
 
 
 function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
-  const course = COURSES[courseKey];
+  const course = getCourse(courseKey);
   const [scores,   setScores]   = useState(() => initialData?.holes
     ? initialData.holes.map(h => h.strokes!=null ? String(h.strokes) : String(course.holes[h.hole-1].par))
     : course.holes.map(h => String(h.par)));
@@ -663,7 +665,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function SplashScreen({round, prevRounds, onClose, onUndo}) {
-  const course = COURSES[round.courseKey];
+  const course = getCourse(round.courseKey);
   const par = course?.par ?? 72;
   const diff = round.score - par;
   const diffS = diff === 0 ? "E" : diff > 0 ? `+${diff}` : `${diff}`;
@@ -696,7 +698,7 @@ function SplashScreen({round, prevRounds, onClose, onUndo}) {
 
   // Streaks – rounds under par
   if (diff <= 0 && prevRounds.length > 0) {
-    const streak = prevRounds.filter(r=>r.score-(COURSES[r.courseKey]?.par??72)<=0).length;
+    const streak = prevRounds.filter(r=>r.score-(getCourse(r.courseKey)?.par??72)<=0).length;
     if (streak >= 2) insights.push({emoji:"🔥", text:`${streak+1} rundor i rad under eller på par!`});
   }
   // Streak – improving scores
@@ -834,7 +836,7 @@ window.GolfApp = function App() {
   const girArr = rounds.filter(r=>r.gir!=null).map(r=>r.gir);
   const fwArr  = rounds.filter(r=>r.fairways!=null).map(r=>r.fairways);
   const lat = sorted[0];
-  const latDiff = lat ? lat.score-(COURSES[lat.courseKey]?.par??72) : null;
+  const latDiff = lat ? lat.score-(getCourse(lat.courseKey)?.par??72) : null;
 
   const [splash, setSplash] = useState(null); // holds the saved round for splash display
 
@@ -941,6 +943,28 @@ window.GolfApp = function App() {
               <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:2}}>Par {c.par} · 18 hål · Hooks GK</div>
             </button>
           ))}
+
+          {/* Externa banor */}
+          <div style={{marginBottom:12}}>
+            <span style={C.lbl}>Extern bana</span>
+            <select
+              defaultValue=""
+              onChange={e=>{ if(e.target.value){setSelCourse(e.target.value);setView("playing");} }}
+              style={{
+                ...C.inp, background:"rgba(168,213,162,0.04)",
+                appearance:"none", WebkitAppearance:"none",
+                backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a8d5a2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center",
+                paddingRight:"36px", cursor:"pointer",
+              }}
+            >
+              <option value="" style={{background:"#0d2b14"}}>Välj extern bana…</option>
+              {Object.entries(EXTERNAL_COURSES).map(([key,c])=>(
+                <option key={key} value={key} style={{background:"#0d2b14"}}>{c.emoji} {c.name} – {c.location}</option>
+              ))}
+            </select>
+          </div>
+
           <button onClick={()=>setView("home")} style={{...C.btnO,width:"100%"}}>Avbryt</button>
         </div>
       )}
@@ -968,7 +992,7 @@ window.GolfApp = function App() {
           <div style={{fontSize:17,color:"#FFCC00",marginBottom:14,fontWeight:"bold"}}>Historik</div>
           {sorted.length===0 && <div style={{color:"rgba(168,213,162,0.35)",textAlign:"center",marginTop:60}}>Inga rundor ännu.</div>}
           {sorted.map(r=>{
-            const cp = COURSES[r.courseKey]?.par??72;
+            const cp = getCourse(r.courseKey)?.par??72;
             const d = r.score-cp;
             return (
               <div key={r.id} style={C.card}>
@@ -1044,8 +1068,8 @@ window.GolfApp = function App() {
                     <tr style={{borderTop:"2px solid rgba(168,213,162,0.18)",fontWeight:"bold"}}>
                       <td colSpan={2} style={{padding:"6px 5px",color:"#ffffff"}}>Totalt</td>
                       <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.score}</td>
-                      <td style={{padding:"6px 5px",textAlign:"center",color:(detail.score-(COURSES[detail.courseKey]?.par??72))<0?"#e05050":(detail.score-(COURSES[detail.courseKey]?.par??72))===0?"#5fca5f":"#808080"}}>
-                        {(()=>{const d=detail.score-(COURSES[detail.courseKey]?.par??72);return d>=0?`+${d}`:d;})()}
+                      <td style={{padding:"6px 5px",textAlign:"center",color:(detail.score-(getCourse(detail.courseKey)?.par??72))<0?"#e05050":(detail.score-(getCourse(detail.courseKey)?.par??72))===0?"#5fca5f":"#808080"}}>
+                        {(()=>{const d=detail.score-(getCourse(detail.courseKey)?.par??72);return d>=0?`+${d}`:d;})()}
                       </td>
                       <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.putts||"–"}</td>
                       <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.fairways??"-"}</td>
@@ -1078,7 +1102,7 @@ window.GolfApp = function App() {
                 const cr=rounds.filter(r=>r.courseKey===key);
                 if(!cr.length) return null;
                 const cs=cr.map(r=>r.score);
-                return <Block key={key} title={`${COURSES[key].emoji} ${COURSES[key].name} (${cr.length} rundor)`}>
+                return <Block key={key} title={`${getCourse(key).emoji} ${getCourse(key).name} (${cr.length} rundor)`}>
                   <div style={{display:"flex",gap:20}}>
                     <Mini label="Snitt" value={avg(cs)}/><Mini label="Bäst" value={Math.min(...cs)}/><Mini label="Sämst" value={Math.max(...cs)}/>
                   </div>
@@ -1701,10 +1725,7 @@ window.GolfApp = function App() {
 }
 
 
-    ReactDOM.render(
-      React.createElement(window.GolfApp),
-      document.getElementById("root")
-    );
+    ReactDOM.render(React.createElement(window.GolfApp), document.getElementById("root"));
   </script>
 </body>
 </html>
