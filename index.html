@@ -315,8 +315,8 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
     const CLUBS = ["Dr","FW","Hy","Ir"];
     return Array(18).fill(null).map((_,i)=>{
       const holeNum = i+1;
-      const allHoles = (rounds||[]).flatMap(r=>r.holes||[]);
-      const forHole = allHoles.filter(h=>h.hole===holeNum && h.teeClub);
+      const allHoles = (rounds||[]).flatMap(r=>(r.holes||[]).map(h=>({...h,_courseKey:r.courseKey})));
+      const forHole = allHoles.filter(h=>h.hole===holeNum && h.teeClub && h._courseKey===courseKey);
       if(!forHole.length) return course.holes[i].par===3 ? "Ir" : "Dr";
       const counts = Object.fromEntries(CLUBS.map(c=>[c, forHole.filter(h=>h.teeClub===c).length]));
       return CLUBS.reduce((a,b)=>counts[b]>counts[a]?b:a);
@@ -382,7 +382,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
         hole:i+1, par:course.holes[i].par,
         strokes:s===""?null:+s,
         putts:putts[i]===""?null:+putts[i],
-        fairway:fw[i], gir:gir[i],
+        fairway: course.holes[i].par >= 4 ? fw[i] : null,
         greenZone:gir[i]===true?greenZ[i]:null, missZone:gir[i]===false?missZ[i]:null, inspelLen:inspelLen[i], teeClub:teeClub[i],
         puttDist:puttDist[i]||[],
         proximity: (+putts[i]||0)===0 ? null : (puttDist[i]?.[0] ?? null),
@@ -459,6 +459,37 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
           </div>
         </div>
 
+        {/* Greenträff vid Inspel */}
+        <div style={{marginBottom:12}}>
+          <span style={C.lbl}>Greenträff vid Inspel</span>
+          <div style={{display:"flex",gap:8}}>
+            {[["✓ Ja",true],["✗ Nej",false]].map(([lbl,val])=>(
+              <button key={lbl} onClick={()=>togGir(val)} style={{
+                flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:13,
+                background:gir[hole]===val?(val?"rgba(95,202,95,0.25)":"rgba(220,80,80,0.25)"):"rgba(255,255,255,0.05)",
+                border:gir[hole]===val?`1px solid ${val?"#5fca5f":"#e05050"}`:"1px solid rgba(168,213,162,0.14)",
+                color:gir[hole]===val?(val?"#5fca5f":"#e05050"):"rgba(255,255,255,0.55)",
+              }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Green zone – only when GIR = Ja */}
+        {gir[hole]===true && (
+          <div style={{marginBottom:12}}>
+            <span style={C.lbl}>Greenträff – var landade bollen?</span>
+            <GreenMap selected={greenZ[hole]} onSelect={handleGreenZone}/>
+          </div>
+        )}
+
+        {/* Miss zone – only when GIR = Nej */}
+        {gir[hole]===false && (
+          <div style={{marginBottom:12}}>
+            <span style={C.lbl}>Greenmiss – var landade bollen?</span>
+            <MissMap selected={missZ[hole]} onSelect={handleMissZone}/>
+          </div>
+        )}
+
         {/* Putts */}
         <div style={{marginBottom:12}}>
           <span style={C.lbl}>Puttar</span>
@@ -473,8 +504,6 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
             ))}
           </div>
         </div>
-
-        {/* Utslagsklubba */}
         <div style={{marginBottom:12}}>
           <span style={C.lbl}>Utslagsklubba</span>
           <div style={{display:"flex",gap:5}}>
@@ -537,37 +566,6 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
             })}
           </div>
         </div>
-
-        {/* Greenträff vid Inspel */}
-        <div style={{marginBottom:12}}>
-          <span style={C.lbl}>Greenträff vid Inspel</span>
-          <div style={{display:"flex",gap:8}}>
-            {[["✓ Ja",true],["✗ Nej",false]].map(([lbl,val])=>(
-              <button key={lbl} onClick={()=>togGir(val)} style={{
-                flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:13,
-                background:gir[hole]===val?(val?"rgba(95,202,95,0.25)":"rgba(220,80,80,0.25)"):"rgba(255,255,255,0.05)",
-                border:gir[hole]===val?`1px solid ${val?"#5fca5f":"#e05050"}`:"1px solid rgba(168,213,162,0.14)",
-                color:gir[hole]===val?(val?"#5fca5f":"#e05050"):"rgba(255,255,255,0.55)",
-              }}>{lbl}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Green zone – only when GIR = Ja */}
-        {gir[hole]===true && (
-          <div style={{marginBottom:12}}>
-            <span style={C.lbl}>Greenträff – var landade bollen?</span>
-            <GreenMap selected={greenZ[hole]} onSelect={handleGreenZone}/>
-          </div>
-        )}
-
-        {/* Miss zone – only when GIR = Nej */}
-        {gir[hole]===false && (
-          <div style={{marginBottom:12}}>
-            <span style={C.lbl}>Greenmiss – var landade bollen?</span>
-            <MissMap selected={missZ[hole]} onSelect={handleMissZone}/>
-          </div>
-        )}
 
         {/* Putt distances – only when putts > 0 */}
         {(+putts[hole]||0) > 0 && (()=>{
