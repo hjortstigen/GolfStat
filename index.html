@@ -292,7 +292,7 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
     ? initialData.holes.map(h => h.gir??true)
     : Array(18).fill(true));
   const [greenZ,   setGreenZ]   = useState(() => initialData?.holes
-    ? initialData.holes.map(h => h.greenZone??"C")
+    ? initialData.holes.map(h => h.greenZone??(h.gir===false?null:"C"))
     : Array(18).fill("C"));
   const [missZ,    setMissZ]    = useState(() => initialData?.holes
     ? initialData.holes.map(h => h.missZone??null)
@@ -374,15 +374,16 @@ function HoleEntry({courseKey, date, onDone, onCancel, rounds, initialData}) {
       courseKey, courseName: course.fullName, date,
       score: total,
       putts: totalPutts||null,
-      fairways: fw.filter(f=>f===true).length,
-      fairwayMissV: fw.filter(f=>f==="Miss V").length,
-      fairwayMissH: fw.filter(f=>f==="Miss H").length,
+      fairways: fw.filter((f,i)=>course.holes[i].par>=4&&f===true).length,
+      fairwayMissV: fw.filter((f,i)=>course.holes[i].par>=4&&f==="Miss V").length,
+      fairwayMissH: fw.filter((f,i)=>course.holes[i].par>=4&&f==="Miss H").length,
       gir: gir.filter(g=>g===true).length,
       holes: scores.map((s,i)=>({
         hole:i+1, par:course.holes[i].par,
         strokes:s===""?null:+s,
         putts:putts[i]===""?null:+putts[i],
         fairway: course.holes[i].par >= 4 ? fw[i] : null,
+        gir: gir[i],
         greenZone:gir[i]===true?greenZ[i]:null, missZone:gir[i]===false?missZ[i]:null, inspelLen:inspelLen[i], teeClub:teeClub[i],
         puttDist:puttDist[i]||[],
         proximity: (+putts[i]||0)===0 ? null : (puttDist[i]?.[0] ?? null),
@@ -1071,7 +1072,7 @@ window.GolfApp = function App() {
                         {(()=>{const d=detail.score-(getCourse(detail.courseKey)?.par??72);return d>=0?`+${d}`:d;})()}
                       </td>
                       <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.putts||"–"}</td>
-                      <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.fairways??"-"}</td>
+                      <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{(()=>{const fwH=(detail.holes||[]).filter(h=>h.par>=4);return fwH.length?(detail.holes.filter(h=>h.par>=4&&h.fairway===true).length+'/'+fwH.length):detail.fairways??'–';})()}</td>
                       <td style={{padding:"6px 5px",textAlign:"center",color:"#ffffff"}}>{detail.gir??"-"}</td>
                     </tr>
                   </tbody>
