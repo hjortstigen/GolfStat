@@ -10,7 +10,7 @@
   <div id="root"></div>
   <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
   <script type="text/babel">
 const { useState, useEffect } = React;
 
@@ -1459,14 +1459,6 @@ window.GolfApp = function App() {
                 };
                 const Empty = () => <div/>;
 
-                // 5×5 grid layout:
-                // Row 0: [empty] [MZ:LV] [MZ:L]  [MZ:LH] [empty]
-                // Row 1: [MZ:V]  [GZ:BV] [GZ:B]  [GZ:BH] [MZ:H]
-                // Row 2: [MZ:V*] [GZ:V]  [GZ:C]  [GZ:H]  [MZ:H*]  <- V/H repeated
-                // Row 3: [MZ:V*] [GZ:FV] [GZ:F]  [GZ:FH] [MZ:H*]
-                // Row 4: [empty] [MZ:KV] [MZ:K]  [MZ:KH] [empty]
-                // MZ keys: BV=LV, B=L, BH=LH, V=V, H=H, FV=KV, F=K, FH=KH
-
                 const LenFilter = () => (
                   <div style={{display:"flex",gap:4,marginBottom:12}}>
                     {[null,"<75","75-100","100-125","125-150",">150"].map(v=>{
@@ -1487,32 +1479,25 @@ window.GolfApp = function App() {
                     <div style={{fontSize:9,color:"rgba(168,213,162,0.35)",textAlign:"center",letterSpacing:1,marginBottom:4}}>BAK / LÅNG</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gridTemplateRows:"repeat(5,auto)",gap:4}}>
 
-                      {/* Rad 1: LV | L(span 3) | LH */}
                       {(()=>{ const h=missHeat("BV"); return <div style={{gridColumn:"1",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>LV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=missHeat("B");  return <div style={{gridColumn:"2/5",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>L</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=missHeat("BH"); return <div style={{gridColumn:"5",gridRow:"1",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>LH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
 
-                      {/* V – span 3 rader kol1 rad2-4 */}
                       {(()=>{ const h=missHeat("V"); return <div style={{gridColumn:"1",gridRow:"2/5",padding:"4px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:2}}>V</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:2}}>{h.n}</div>}</div>; })()}
-                      {/* H – span 3 rader kol5 rad2-4 */}
                       {(()=>{ const h=missHeat("H"); return <div style={{gridColumn:"5",gridRow:"2/5",padding:"4px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:2}}>H</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:2}}>{h.n}</div>}</div>; })()}
 
-                      {/* Rad 2: BV | B | BH */}
                       {(()=>{ const h=greenHeat("BV"); return <div style={{gridColumn:"2",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>BV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("B");  return <div style={{gridColumn:"3",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>B</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("BH"); return <div style={{gridColumn:"4",gridRow:"2",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>BH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
 
-                      {/* Rad 3: V | C | H */}
                       {(()=>{ const h=greenHeat("V");  return <div style={{gridColumn:"2",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>V</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("C");  return <div style={{gridColumn:"3",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>C</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("H");  return <div style={{gridColumn:"4",gridRow:"3",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>H</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
 
-                      {/* Rad 4: FV | F | FH */}
                       {(()=>{ const h=greenHeat("FV"); return <div style={{gridColumn:"2",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>FV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("F");  return <div style={{gridColumn:"3",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>F</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=greenHeat("FH"); return <div style={{gridColumn:"4",gridRow:"4",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(168,213,162,0.5)",marginBottom:1}}>FH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(168,213,162,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
 
-                      {/* Rad 5: KV | K(span 3) | KH */}
                       {(()=>{ const h=missHeat("FV"); return <div style={{gridColumn:"1",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>KV</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=missHeat("F");  return <div style={{gridColumn:"2/5",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>K</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
                       {(()=>{ const h=missHeat("FH"); return <div style={{gridColumn:"5",gridRow:"5",padding:"6px 2px",borderRadius:8,textAlign:"center",background:h.bg,border:`1px solid ${h.border}`}}><div style={{fontSize:9,color:"rgba(220,80,80,0.5)",marginBottom:1}}>KH</div><div style={{fontSize:12,fontWeight:"bold",color:h.text,lineHeight:1}}>{h.pct>0?h.pct+"%":"–"}</div>{h.n>0&&<div style={{fontSize:8,color:"rgba(220,80,80,0.3)",marginTop:1}}>{h.n}</div>}</div>; })()}
